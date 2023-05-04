@@ -92,11 +92,12 @@ open class WaltIdJwtService : JwtService() {
 //            .expirationTime(Date(Date().getTime() + 60 * 1000))
 //            .build()
 
-
+        println("Payload for parsing  $payload")        
         val claimsSet = if (payload != null) JWTClaimsSet.parse(payload) else JWTClaimsSet.Builder().subject(keyAlias)
             .issuer("https://walt.id").expirationTime(Date(Date().time + 60 * 1000)).build()
-
+        println("Key alias $keyAlias")
         val issuerKey = keyService.load(keyAlias)
+        println("issuer key $issuerKey")
         if (issuerKey == null) {
             log.error { "Could not load signing key for $keyAlias" }
             throw IllegalArgumentException("Could not load signing key for $keyAlias")
@@ -108,7 +109,7 @@ open class WaltIdJwtService : JwtService() {
         } else {
             null
         }
-
+        log.debug { "claim set ---------------------: $claimsSet" }
         val signedJwt = when (issuerKey.algorithm) {
             KeyAlgorithm.EdDSA_Ed25519 -> {
                 val jwt = createSignedJwt(JWSAlgorithm.EdDSA, keyAlias, claimsSet, includeJwk)
@@ -138,7 +139,12 @@ open class WaltIdJwtService : JwtService() {
 
             else -> {
                 log.error { "Algorithm ${issuerKey.algorithm} not supported" }
-                throw UnsupportedOperationException("Algorithm ${issuerKey.algorithm} not supported")
+                // throw UnsupportedOperationException("Algorithm ${issuerKey.algorithm} not supported")
+                val jwt = createSignedJwt(JWSAlgorithm.PS256, keyAlias, claimsSet, includeJwk)
+                log.debug { "Algorithm jwt  $jwt" }
+                //jwt.sign(Ed25519Signer(issuerKey.toOctetKeyPair()))
+                jwt.sign(LdSigner.JwsLtSigner(issuerKey.keyId))
+                jwt
             }
         }
 
@@ -161,7 +167,7 @@ open class WaltIdJwtService : JwtService() {
         }
 
         val verifierKey = keyService.load(keyAlias)
-
+        log.debug { "Verifying token:  $token" }
         val res = when (verifierKey.algorithm) {
             KeyAlgorithm.EdDSA_Ed25519 -> jwt.verify(Ed25519Verifier(keyService.toEd25519Jwk(verifierKey)))
             KeyAlgorithm.ECDSA_Secp256k1 -> {
@@ -178,7 +184,10 @@ open class WaltIdJwtService : JwtService() {
 
             else -> {
                 log.error { "Algorithm ${verifierKey.algorithm} not supported" }
-                throw UnsupportedOperationException("Algorithm ${verifierKey.algorithm} not supported")
+                // throw UnsupportedOperationException("Algorithm ${verifierKey.algorithm} not supported")
+                val verifier = ECDSAVerifier(PublicKeyHandle(verifierKey.keyId, verifierKey.getPublicKey() as ECPublicKey))
+                verifier.jcaContext.provider = provider
+                jwt.verify(verifier)
             }
         }
 

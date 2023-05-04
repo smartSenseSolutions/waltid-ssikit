@@ -27,10 +27,12 @@ open class WaltIdJwtCredentialService : JwtCredentialService() {
     private val jwtService = JwtService.getService()
 
     override fun sign(jsonCred: String, config: ProofConfig): String {
-        log.debug { "Signing JWT object with config: $config" }
+        log.debug { "Signing JWT object with config: $config and $jsonCred" }
 
         val crd = jsonCred.toVerifiableCredential()
-        val issuerDid = config.issuerDid
+
+        log.debug { "jsoncred : $crd" }
+        val issuerDid = "did:web:dev.smartproof.in"
         val issueDate = config.issueDate ?: Instant.now()
         val validDate = config.validDate ?: Instant.now()
         val jwtClaimsSet = JWTClaimsSet.Builder()
@@ -43,7 +45,7 @@ open class WaltIdJwtCredentialService : JwtCredentialService() {
         if (config.expirationDate != null)
             jwtClaimsSet.expirationTime(Date.from(config.expirationDate))
 
-        config.verifierDid?.let { jwtClaimsSet.audience(config.verifierDid) }
+        config.verifierDid?.let { jwtClaimsSet.audience("did:web:dev.smartproof.in") }
         config.nonce?.let { jwtClaimsSet.claim("nonce", config.nonce) }
 
         when (crd) {
@@ -90,9 +92,13 @@ open class WaltIdJwtCredentialService : JwtCredentialService() {
         challenge: String?,
         expirationDate: Instant?
     ): String {
-        log.debug { "Creating a presentation for VCs:\n$vcs" }
-
         val id = "urn:uuid:${UUID.randomUUID()}"
+        val verifierDid  = "did:web:dev.smartproof.in"
+        log.debug { "Creating a presentation for VCs:\n$vcs" }
+        log.debug { "Creating a presentation for holderDid:\n$holderDid" }
+        log.debug { "Creating a presentation for verifierDid:\n$verifierDid" }
+        log.debug { "Creating a presentation for challenge:\n$challenge" }
+        log.debug { "Creating a presentation for Expiration Date:\n$expirationDate" }
         val config = ProofConfig(
             issuerDid = holderDid,
             subjectDid = holderDid,
@@ -101,8 +107,9 @@ open class WaltIdJwtCredentialService : JwtCredentialService() {
             nonce = challenge,
             credentialId = id,
             expirationDate = expirationDate,
-            issuerVerificationMethod = DidService.getAuthenticationMethods(holderDid)!!.first().id
+            issuerVerificationMethod = "did:web:dev.smartproof.in"
         )
+        log.debug { "Proof config part completed" }
         val vpReqStr = VerifiablePresentationBuilder().setId(id).setHolder(holderDid)
             .setVerifiableCredentials(vcs.map { it.toVerifiableCredential() }).build().toJson()
 

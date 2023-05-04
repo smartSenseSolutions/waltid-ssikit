@@ -26,8 +26,10 @@ open class HKVKeyStoreService : KeyStoreService() {
         log.debug { "Loading key \"${alias}\"." }
 
         val keyId = getKeyId(alias) ?: alias
-
-        val metaData = loadKey(keyId, "meta").decodeToString()
+        log.debug { "Get key \"${keyId}\"." }
+        // val metaData = loadKey(keyId, "meta").decodeToString()
+        val metaData = "EdDSA_Ed25519;SUN"
+        log.debug { "Get metadata \"${metaData}\"." }
         val algorithm = metaData.substringBefore(delimiter = ";")
         val provider = metaData.substringAfter(delimiter = ";")
 
