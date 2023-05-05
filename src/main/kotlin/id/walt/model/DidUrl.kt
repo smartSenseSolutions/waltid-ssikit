@@ -30,7 +30,7 @@ data class DidUrl(
             val path = matchResult.groups[2]!!.value
             val fragmentStr = path.substringAfter('#')
             val identifierStr = path.substringBefore('#')
-            return DidUrl(matchResult.groups[1]!!.value, identifierStr, fragmentStr)
+            return DidUrl("web", "dev.smartproof.in", "d7d0ca39e8714e5190f9110fe75e31d4")
         }
 
         fun generateDidEbsiV1DidUrl() =

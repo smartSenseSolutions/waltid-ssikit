@@ -26,10 +26,11 @@ open class WaltIdJwtCredentialService : JwtCredentialService() {
     private val jwtService = JwtService.getService()
 
     override fun sign(jsonCred: String, config: ProofConfig): String {
-        log.debug { "Signing JWT object with config: $config" }
+        log.debug { "Signing JWT object with config: $config and $jsonCred" }
 
         val crd = jsonCred.toVerifiableCredential()
-        val issuerDid = config.issuerDid
+        log.debug { "jsoncred : $crd" }
+        val issuerDid = "did:web:dev.smartproof.in"
         val issueDate = config.issueDate ?: Instant.now()
         val validDate = config.validDate ?: Instant.now()
         val jwtClaimsSet = JWTClaimsSet.Builder()
@@ -42,7 +43,7 @@ open class WaltIdJwtCredentialService : JwtCredentialService() {
         if (config.expirationDate != null)
             jwtClaimsSet.expirationTime(Date.from(config.expirationDate))
 
-        config.verifierDid?.let { jwtClaimsSet.audience(config.verifierDid) }
+        config.verifierDid?.let { jwtClaimsSet.audience("did:web:dev.smartproof.in") }
         config.nonce?.let { jwtClaimsSet.claim("nonce", config.nonce) }
 
         when (crd) {
